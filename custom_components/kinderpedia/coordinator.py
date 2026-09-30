@@ -100,8 +100,18 @@ def _parse_nap(item: dict, day_entry: dict) -> None:
 
 
 def _number(value: Any) -> float:
-    """Return *value* if it is numeric, else 0."""
-    return value if isinstance(value, (int, float)) and not isinstance(value, bool) else 0
+    """Return *value* as a number (numeric strings included), else 0."""
+    if isinstance(value, bool):
+        return 0
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, str):
+        try:
+            number = float(value.strip().rstrip("%"))
+        except ValueError:
+            return 0
+        return int(number) if number.is_integer() else number
+    return 0
 
 
 def _parse_food(item: dict, day_entry: dict) -> None:
@@ -130,12 +140,12 @@ def _parse_food(item: dict, day_entry: dict) -> None:
 
         if raw_type in _LUNCH_TYPES:
             dish = f"lunch_dish_{_LUNCH_TYPES.index(raw_type) + 1}"
-            day_entry[f"{dish}_percent"] = percent if percent is not None else 0
-            if isinstance(percent, (int, float)):
-                lunch_percents.append(percent)
-            day_entry["lunch_percent"] = (
-                round(sum(lunch_percents) / len(lunch_percents), 1) if lunch_percents else 0
-            )
+            # The total averages exactly the per-dish values we expose, so
+            # 0% and 50% always give 25%.
+            dish_percent = _number(percent)
+            day_entry[f"{dish}_percent"] = dish_percent
+            lunch_percents.append(dish_percent)
+            day_entry["lunch_percent"] = round(sum(lunch_percents) / len(lunch_percents), 1)
             if menus:
                 day_entry[f"{dish}_items"] = names
                 day_entry["lunch_items"] = [*day_entry.get("lunch_items", []), *names]
