@@ -11,14 +11,14 @@ A calendar entity (`<name> school`) shows the full weekly timeline your kinderga
 - **School event** - a timed event starting at the check-in time and ending at 18:00. The description shows each meal on its own line with an icon and consumption percentage:
   ```
   🥣 Breakfast (100%): Tartine cu hummus, ardei și ceai
-  🍽️ Lunch (75%): Supă cremă de morcov, Papricaș de pui
+  🍽️ Lunch (75%): Supă cremă de morcov (80%), Papricaș de pui (70%)
   🍪 Snack: Biscuiți cu ovăz
   ```
 - **Nap event** - a separate timed event using the actual nap start/end times reported by the teacher.
 - **Absence handling** - when a child is marked absent (motivated or not), no School or Nap events are created for that day. The planned menu is still fetched by the API, but it won't clutter your calendar.
 - **Historical data** - past weeks are automatically archived so the calendar can display the full kindergarten history, not just the current week. See [History & backfill](#history--backfill) below.
 
-The calendar entity also exposes **detailed attributes** for the most recent school day (or today, if available): `checkin`, `nap`, `nap_duration`, `breakfast_items`, `breakfast_percent`, `breakfast_kcal`, `lunch_items`, `lunch_percent`, `lunch_kcal`, `snack_items`, and more. These are ready to use in template cards or automations.
+The calendar entity also exposes **detailed attributes** for the most recent school day (or today, if available): `checkin`, `nap`, `nap_duration`, `breakfast_items`, `breakfast_percent`, `breakfast_kcal`, `lunch_items`, `lunch_percent`, `lunch_kcal`, `lunch_dish_1_items`, `lunch_dish_1_percent`, `lunch_dish_2_items`, `lunch_dish_2_percent`, `snack_items`, and more. These are ready to use in template cards or automations.
 
 ### Sensors
 
@@ -26,7 +26,8 @@ The calendar entity also exposes **detailed attributes** for the most recent sch
 |---|---|
 | **Child info** | Name, birth date, gender, kindergarten name |
 | **Breakfast week** | Weekly breakfast consumption percentages (Mon-Fri) for charting |
-| **Lunch week** | Weekly lunch consumption percentages (Mon-Fri) for charting |
+| **Lunch week** | Weekly lunch consumption percentages (Mon-Fri), averaged across both dishes, for charting |
+| **Lunch dish 1 week** / **Lunch dish 2 week** | Weekly consumption percentage of each lunch dish (Mon-Fri), plus the dish names as `<weekday>_items` attributes |
 | **Nap week** | Weekly nap durations in minutes (Mon-Fri) for charting |
 | **Newsfeed** | Latest school newsfeed post (icon: `mdi:newspaper-variant-outline`). Recent entries available as an attribute |
 
@@ -85,7 +86,7 @@ No parameters needed - it runs for all configured children.
 ## Dashboard ideas
 
 - Use the **calendar card** for a quick daily glance - meal icons, percentages, and nap times are visible at a glance.
-- Use the **week sensors** (`breakfast_week`, `lunch_week`, `nap_week`) with an [ApexCharts card](https://github.com/RomRider/apexcharts-card) to visualise weekly trends.
+- Use the **week sensors** (`breakfast_week`, `lunch_week`, `lunch_dish_1_week`, `lunch_dish_2_week`, `nap_week`) with an [ApexCharts card](https://github.com/RomRider/apexcharts-card) to visualise weekly trends.
 - Use the calendar entity's **extra attributes** in template cards for a detailed breakdown of today's meals.
 
 ## License

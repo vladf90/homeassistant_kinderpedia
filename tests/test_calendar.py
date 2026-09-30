@@ -410,3 +410,20 @@ async def test_non_absent_day_still_has_school_event(hass: HomeAssistant):
         if isinstance(e.start, datetime) and e.start.date() == date(2026, 2, 9) and e.summary == "School"
     ]
     assert len(monday_school) == 1
+
+
+def test_school_event_lists_each_lunch_dish_with_percent():
+    """Both lunch dishes appear with their own percentage next to the total."""
+    day_info = {
+        "date": "2026-02-09",
+        "checkin": "08:15 - 16:30",
+        "lunch_items": ["Soup", "Pasta"],
+        "lunch_percent": 70.0,
+        "lunch_dish_1_items": ["Soup"],
+        "lunch_dish_1_percent": 80,
+        "lunch_dish_2_items": ["Pasta"],
+        "lunch_dish_2_percent": 60,
+    }
+    event = KinderpediaCalendar._build_school_event(date(2026, 2, 9), day_info)
+    assert "Lunch (70.0%): Soup (80%), Pasta (60%)" in event.description
+

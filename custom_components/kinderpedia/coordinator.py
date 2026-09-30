@@ -99,10 +99,17 @@ def _parse_nap(item: dict, day_entry: dict) -> None:
         day_entry["nap_duration"] = (int(hours[1]) * 60 if hours else 0) + (int(minutes[1]) if minutes else 0)
 
 
+def _number(value: Any) -> float:
+    """Return *value* if it is numeric, else 0."""
+    return value if isinstance(value, (int, float)) and not isinstance(value, bool) else 0
+
+
 def _parse_food(item: dict, day_entry: dict) -> None:
     """Fill meal menus, totals and eaten percentages into *day_entry*.
 
-    Lunch can arrive as two courses (``mp`` + ``mp2``); those are averaged.
+    Lunch can arrive as two dishes (``mp`` + ``mp2``). Each dish is kept as
+    ``lunch_dish_{n}_*``; ``lunch_*`` holds the combined menu, summed totals
+    and the averaged percentage.
     """
     details = item.get("details")
     if not isinstance(details, dict):
@@ -117,21 +124,30 @@ def _parse_food(item: dict, day_entry: dict) -> None:
         raw_type = meal.get("type", "unknown")
         food_type = _FOOD_TYPE_MAP.get(raw_type, raw_type)
         percent = meal.get("percent")
-
-        if menus := (meal.get("menus") or []):
-            day_entry[f"{food_type}_items"] = [m.get("name", "unknown") for m in menus if isinstance(m, dict)]
-            totals = meal.get("totals") or {}
-            day_entry[f"{food_type}_kcal"] = totals.get("kcal", 0)
-            day_entry[f"{food_type}_weight"] = totals.get("weight", 0)
+        menus = meal.get("menus") or []
+        names = [m.get("name", "unknown") for m in menus if isinstance(m, dict)]
+        totals = meal.get("totals") or {}
 
         if raw_type in _LUNCH_TYPES:
+            dish = f"lunch_dish_{_LUNCH_TYPES.index(raw_type) + 1}"
+            day_entry[f"{dish}_percent"] = percent if percent is not None else 0
             if isinstance(percent, (int, float)):
                 lunch_percents.append(percent)
             day_entry["lunch_percent"] = (
                 round(sum(lunch_percents) / len(lunch_percents), 1) if lunch_percents else 0
             )
-        else:
-            day_entry[f"{food_type}_percent"] = percent if percent is not None else 0
+            if menus:
+                day_entry[f"{dish}_items"] = names
+                day_entry["lunch_items"] = [*day_entry.get("lunch_items", []), *names]
+                day_entry["lunch_kcal"] = day_entry.get("lunch_kcal", 0) + _number(totals.get("kcal"))
+                day_entry["lunch_weight"] = day_entry.get("lunch_weight", 0) + _number(totals.get("weight"))
+            continue
+
+        if menus:
+            day_entry[f"{food_type}_items"] = names
+            day_entry[f"{food_type}_kcal"] = totals.get("kcal", 0)
+            day_entry[f"{food_type}_weight"] = totals.get("weight", 0)
+        day_entry[f"{food_type}_percent"] = percent if percent is not None else 0
 
 
 def _parse_newsfeed(json_data: Any) -> list[dict]:

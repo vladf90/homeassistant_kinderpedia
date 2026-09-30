@@ -153,7 +153,40 @@ class TestParseTimeline:
             ]
         })
         result = _parse_timeline(raw)
-        assert result["monday"]["lunch_percent"] == 70.0
+        monday = result["monday"]
+        assert monday["lunch_percent"] == 70.0
+        # Both dishes survive in the combined lunch fields
+        assert monday["lunch_items"] == ["Soup", "Pasta"]
+        assert monday["lunch_kcal"] == 650
+        assert monday["lunch_weight"] == 450
+        # ...and each dish is exposed on its own
+        assert monday["lunch_dish_1_items"] == ["Soup"]
+        assert monday["lunch_dish_1_percent"] == 80
+        assert monday["lunch_dish_2_items"] == ["Pasta"]
+        assert monday["lunch_dish_2_percent"] == 60
+
+    def test_lunch_single_dish(self):
+        """A lunch with only ``mp`` has no second dish."""
+        raw = _make_week({
+            "data": [
+                {
+                    "id": "food_1",
+                    "details": {
+                        "food": {
+                            "meals": [
+                                {"type": "mp", "percent": 90, "menus": [{"name": "Soup"}]},
+                            ]
+                        }
+                    },
+                }
+            ]
+        })
+        monday = _parse_timeline(raw)["monday"]
+        assert monday["lunch_percent"] == 90.0
+        assert monday["lunch_items"] == ["Soup"]
+        assert monday["lunch_dish_1_percent"] == 90
+        assert "lunch_dish_2_items" not in monday
+        assert "lunch_dish_2_percent" not in monday
 
     def test_empty_json(self):
         """Test parsing with empty JSON returns empty dict."""
