@@ -12,11 +12,13 @@ from .const import DOMAIN, SCHOOL_WEEKDAYS
 from .coordinator import KinderpediaConfigEntry, KinderpediaDataUpdateCoordinator
 from .entity import KinderpediaChildEntity
 
-# (unique-id slug, day-entry field)
-_WEEK_SENSORS: tuple[tuple[str, str], ...] = (
-    ("breakfast_week", "breakfast_percent"),
-    ("lunch_week", "lunch_percent"),
-    ("nap_week", "nap_duration"),
+# (unique-id slug, day-entry field, optional day-entry items field)
+_WEEK_SENSORS: tuple[tuple[str, str, str | None], ...] = (
+    ("breakfast_week", "breakfast_percent", None),
+    ("lunch_week", "lunch_percent", None),
+    ("lunch_dish_1_week", "lunch_dish_1_percent", "lunch_dish_1_items"),
+    ("lunch_dish_2_week", "lunch_dish_2_percent", "lunch_dish_2_items"),
+    ("nap_week", "nap_duration", None),
 )
 
 
@@ -49,8 +51,8 @@ async def async_setup_entry(
             )
             new_sensors.append(KinderpediaChildInfoSensor(*args))
             new_sensors.extend(
-                KinderpediaWeekSensor(*args, sensor_type=slug, field=field)
-                for slug, field in _WEEK_SENSORS
+                KinderpediaWeekSensor(*args, sensor_type=slug, field=field, items_field=items_field)
+                for slug, field, items_field in _WEEK_SENSORS
             )
             new_sensors.append(KinderpediaNewsfeedSensor(*args))
 
@@ -109,9 +111,11 @@ class KinderpediaWeekSensor(KinderpediaChildEntity, SensorEntity):
         *,
         sensor_type: str,
         field: str,
+        items_field: str | None = None,
     ) -> None:
         super().__init__(coordinator, child_id, kg_id, device_name)
         self._field = field
+        self._items_field = items_field
         self._attr_unique_id = f"{DOMAIN}_{sensor_type}_{child_id}_{kg_id}"
         self._attr_name = f"{first_name.lower()} {sensor_type.replace('_', ' ')}"
 
@@ -124,7 +128,10 @@ class KinderpediaWeekSensor(KinderpediaChildEntity, SensorEntity):
         week = self._week_days()
         attrs: dict[str, Any] = {"last_updated": self._last_updated}
         for weekday in SCHOOL_WEEKDAYS:
-            attrs[weekday] = week.get(weekday, {}).get(self._field, 0)
+            day = week.get(weekday, {})
+            attrs[weekday] = day.get(self._field, 0)
+            if self._items_field:
+                attrs[f"{weekday}_items"] = ", ".join(day.get(self._items_field) or [])
         return attrs
 
 

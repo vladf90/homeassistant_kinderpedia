@@ -29,7 +29,7 @@ def coordinator():
     return mock
 
 
-def _week_sensor(coordinator, sensor_type="breakfast_week", field="breakfast_percent"):
+def _week_sensor(coordinator, sensor_type="breakfast_week", field="breakfast_percent", items_field=None):
     return KinderpediaWeekSensor(
         coordinator,
         111,
@@ -38,6 +38,7 @@ def _week_sensor(coordinator, sensor_type="breakfast_week", field="breakfast_per
         "Alice",
         sensor_type=sensor_type,
         field=field,
+        items_field=items_field,
     )
 
 
@@ -100,3 +101,18 @@ class TestWeekSensor:
             coordinator, sensor_type="nap_week", field="nap_duration"
         ).extra_state_attributes
         assert attrs["monday"] == 90
+
+    def test_lunch_dish_week_reports_percent_and_items(self, coordinator, freezer):
+        freezer.move_to("2026-02-11T12:00:00+00:00")
+        sensor = _week_sensor(
+            coordinator,
+            sensor_type="lunch_dish_1_week",
+            field="lunch_dish_1_percent",
+            items_field="lunch_dish_1_items",
+        )
+        assert sensor.name == "alice lunch dish 1 week"
+        attrs = sensor.extra_state_attributes
+        assert attrs["monday"] == 90
+        assert attrs["monday_items"] == "Chicken soup"
+        assert attrs["tuesday"] == 0
+        assert attrs["tuesday_items"] == ""

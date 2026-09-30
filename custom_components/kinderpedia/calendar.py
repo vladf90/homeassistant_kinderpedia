@@ -195,6 +195,17 @@ class KinderpediaCalendar(KinderpediaChildEntity, CalendarEntity):
 
         return events
 
+    @staticmethod
+    def _lunch_dishes(day_info: dict) -> list[str]:
+        """Return each lunch dish with its own percentage, e.g. ``Soup (80%)``."""
+        dishes: list[str] = []
+        for n in (1, 2):
+            if not (items := day_info.get(f"lunch_dish_{n}_items")):
+                continue
+            pct = day_info.get(f"lunch_dish_{n}_percent")
+            dishes.append(f"{', '.join(items)}{f' ({pct}%)' if pct else ''}")
+        return dishes
+
     @classmethod
     def _build_school_event(cls, event_date: date, day_info: dict) -> CalendarEvent | None:
         """Return the timed school-day event, or None if there is nothing to show."""
@@ -206,6 +217,8 @@ class KinderpediaCalendar(KinderpediaChildEntity, CalendarEntity):
             pct = day_info.get(f"{meal}_percent")
             pct_str = f" ({pct}%)" if pct else ""
             icon = _MEAL_ICONS.get(meal, "🍴")
+            if meal == "lunch" and (dishes := cls._lunch_dishes(day_info)):
+                items = dishes
             description_parts.append(f"{icon} {meal.capitalize()}{pct_str}: {', '.join(items)}")
 
         checkin_time = cls._parse_checkin_time(day_info.get("checkin", "unknown"))
