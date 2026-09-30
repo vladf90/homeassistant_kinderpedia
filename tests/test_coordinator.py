@@ -1,5 +1,7 @@
 """Tests for the Kinderpedia coordinator and timeline parser."""
 
+import pytest
+
 from custom_components.kinderpedia.coordinator import _parse_timeline as _parse_by_date
 
 
@@ -164,6 +166,29 @@ class TestParseTimeline:
         assert monday["lunch_dish_1_percent"] == 80
         assert monday["lunch_dish_2_items"] == ["Pasta"]
         assert monday["lunch_dish_2_percent"] == 60
+
+    @pytest.mark.parametrize("first_percent", [0, None, "0"])
+    def test_lunch_total_counts_zero_percent_dish(self, first_percent):
+        """A dish reported as 0% (or missing) still counts towards the total."""
+        raw = _make_week({
+            "data": [
+                {
+                    "id": "food_1",
+                    "details": {
+                        "food": {
+                            "meals": [
+                                {"type": "mp", "percent": first_percent, "menus": [{"name": "Soup"}]},
+                                {"type": "mp2", "percent": 50, "menus": [{"name": "Pasta"}]},
+                            ]
+                        }
+                    },
+                }
+            ]
+        })
+        monday = _parse_timeline(raw)["monday"]
+        assert monday["lunch_dish_1_percent"] == 0
+        assert monday["lunch_dish_2_percent"] == 50
+        assert monday["lunch_percent"] == 25.0
 
     def test_lunch_single_dish(self):
         """A lunch with only ``mp`` has no second dish."""
